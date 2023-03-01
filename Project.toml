@@ -1,0 +1,15 @@
+name = "Kirei"
+uuid = "6a3e96c6-960a-42b3-a988-ca59d115acd5"
+authors = ["Sunoru <s@sunoru.com>"]
+version = "0.1.0"
+
+[deps]
+MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
+MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+
+[compat]
+julia = "1.8"
+MLStyle = "0.4"
+MacroTools = "0.5"
+Reexport = "1.2"
