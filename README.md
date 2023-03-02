@@ -1,6 +1,7 @@
 # Kirei.jl
 
 [![CI](https://github.com/sunoru/Kirei.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/sunoru/Kirei.jl/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/sunoru/Kirei.jl/branch/main/graph/badge.svg?token=5XU9kNNcCC)](https://codecov.io/gh/sunoru/Kirei.jl)
 
 Kirei (pretty & clean) is a collection of macros for making your Julia module.
 
