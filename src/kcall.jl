@@ -23,7 +23,7 @@ end
 Similar to `@ccall`. But it defines typeless arguments as pointers
 and typeless return values as `Cvoid`.
 """
-macro kcall(lib, expr)
+@public macro kcall(lib, expr)
     _kcall(esc(lib), expr)
 end
 

@@ -1,14 +1,12 @@
 module Kirei
 
-export @target, @target_os, @target_arch
-export @public
-export @kcall
+include("./_Common.jl")
+using ._Common
+
+include("./public.jl")
+include("./target.jl")
+include("./kcall.jl")
 
 include("./Common.jl")
-using .Common
-
-include("./target.jl")
-include("./public.jl")
-include("./kcall.jl")
 
 end # module Kirei

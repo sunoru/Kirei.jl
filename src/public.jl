@@ -31,7 +31,7 @@ macro public(expr)
         name = capture_name(expr, __module__)
         isnothing(name) || return quote
             export $name
-            $(esc(expr))
+            Core.@__doc__ $(esc(expr))
         end
         @assert expr.head ≡ :block "Unsupported expression: @public $expr"
         quote
@@ -40,3 +40,5 @@ macro public(expr)
     end
     _public(expr)
 end
+
+export @public

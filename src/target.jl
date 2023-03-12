@@ -39,7 +39,7 @@ Evaluate `expr` only when the target OS and architecture match the given conditi
 
 It uses `@static` to evaluate the conditions at parse time.
 """
-macro target(args...)
+@public macro target(args...)
     argc = length(args)
     if argc == 1
         return esc(args[1])
@@ -63,7 +63,7 @@ Evaluate `expr` only on the target OS.
 
 OS is one of `windows`, `linux`, `macos`.
 """
-macro target_os(targets, expr)
+@public macro target_os(targets, expr)
     :(@target os=$targets $(esc(expr)))
 end
 
@@ -72,6 +72,6 @@ end
 
 Evaluate `expr` only on the target architecture.
 """
-macro target_arch(targets, expr)
+@public macro target_arch(targets, expr)
     :(@target arch=$targets $(esc(expr)))
 end

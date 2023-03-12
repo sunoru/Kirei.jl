@@ -1,8 +1,8 @@
 module Common
 
 using Reexport
-@reexport using Reexport
-@reexport using MLStyle
+
+@reexport using .._Common
 @reexport using ..Kirei
 
 end
