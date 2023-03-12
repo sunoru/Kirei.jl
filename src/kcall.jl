@@ -1,18 +1,17 @@
 function _kcall(lib, expr)
-    expr = @match_expr expr begin
-        (f_(args__)) => :($f($(args...))::Cvoid)
-        (f_(args__)::t_) => :($f($(args...))::$(esc(t)))
+    f, args, T = @match expr begin
+        Expr(:call, f, args...) => (f, args, :Cvoid)
+        Expr(:(::), Expr(:call, f, args...), T) => (f, args, esc(T))
         _ => error("Invalid expression for @kcall: $expr")
     end
-    @capture expr f_(args__)::T_
     if !isnothing(lib) && f isa Symbol
         f = :($lib.$f)
     end
     for i in eachindex(args)
         arg = args[i]
-        args[i] = @match_expr arg begin
-            (a_::t_) => :($(esc(a))::$(esc(t)))
-            (a_) => :($(esc(a))::Ptr{Cvoid})
+        args[i] = @match arg begin
+            Expr(:(::), a, t) => :($(esc(a))::$(esc(t)))
+            ::Symbol => :($(esc(arg))::Ptr{Cvoid})
         end
     end
     :(@ccall $f($(args...))::$T)

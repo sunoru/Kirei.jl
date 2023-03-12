@@ -1,19 +1,22 @@
-function capture_name(expr)
-    name = @match_expr expr begin
-        (v_::_) => v
-        (f_(__) = _) => f
-        (function f_(__) _ end) => f
-        (macro m_(__) _ end) => Symbol("@", m)
-        (const c_ = _) => c
-        (global g_) => g
-        (global g_ = _) => g
-        (v_ = _) => v
-        (s_Symbol) => s
+function capture_name(expr, module_)
+    name = @match expr begin
+        ::Symbol => expr
+        Expr(:(::), v, _) => v
+        Expr(:(=), v, _) => v
+        Expr(:function, f, _...) => f
+        Expr(:macro, m, _...) => Symbol("@", capture_name(m, module_))
+        Expr(:const, c) => c
+        Expr(:global, g) => g
+        Expr(:call, f, _...) => f
+        Expr(:(<:), t, _) => t
+        Expr(:abstract, t) => t
+        Expr(:macrocall, _...) => macroexpand(module_, expr)
+        Expr(:block, _...) => nothing
     end
     if isnothing(name) || name isa Symbol
         name
     else
-        capture_name(name)
+        capture_name(name, module_)
     end
 end
 
@@ -25,7 +28,7 @@ Automatically export the name defined in `expr`.
 """
 macro public(expr)
     function _public(expr)
-        name = capture_name(expr)
+        name = capture_name(expr, __module__)
         isnothing(name) || return quote
             export $name
             $(esc(expr))

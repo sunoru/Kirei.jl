@@ -47,10 +47,10 @@ macro target(args...)
     kwargs = Dict{Symbol, Vector{Symbol}}()
     for i in 1:argc - 1
         kw = args[i]
-        push!(kwargs, @match_expr kw begin
-            (k_=w_Symbol) => (k=>[w])
-            (k_=:(w_)) => (k=>[w])
-            (k_=w_tuple) => (k=>Vector{Symbol}(w.args))
+        push!(kwargs, @match kw begin
+            Expr(:(=), k, w::Symbol) => (k=>[w])
+            Expr(:(=), k, w::QuoteNode) => (k=>[w])
+            Expr(:(=), k, Expr(:tuple, w...)) => (k=>Vector{Symbol}(w))
         end)
     end
     _target(args[end]; kwargs...)

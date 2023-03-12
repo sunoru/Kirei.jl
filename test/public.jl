@@ -7,7 +7,7 @@ using Kirei
 
 @public f1() = 1
 @public begin
-    function f2()
+    @inline function f2()
         2
     end
     macro m3()
