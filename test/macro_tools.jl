@@ -30,5 +30,8 @@ using Kirei
         foo = Foo("abc")
         @test length(foo) ≡ 3
         @test foo[1] ≡ 'a'
+        f(s::String) = s[2]
+        @forward Foo.s f
+        f(foo) ≡ 'b'
     end
 end

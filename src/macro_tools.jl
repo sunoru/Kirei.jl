@@ -69,16 +69,33 @@ It supports the syntax of `@match` and `@λ` in `MLStyle.jl`.
     end
 end
 
+"""
+    @forward Foo.bar f, g, h
+
+Forward methods `f`, `g`, `h` of `Foo` to `Foo.bar`.
+
+For example, the above is equivalent to
+```julia
+f(x::Foo, args...; kwargs...) = f(x.bar, args...; kwargs...)
+g(x::Foo, args...; kwargs...) = g(x.bar, args...; kwargs...)
+h(x::Foo, args...; kwargs...) = h(x.bar, args...; kwargs...)
+```
+
+It is similar to `MacroTools.@forward`.
+"""
 @public macro forward(member, methods)
     @capture member $T.$field
-    methods = methods.args
+    methods = @match methods begin
+        Expr(:tuple, args...) => esc.(args)
+        _ => [esc(methods)]
+    end
     Expr(:block, (
         Expr(
             :(=),
-            :(($(esc(f)))(t::$(esc(T)), args...; kwargs...)),
+            :(($f)(t::$(esc(T)), args...; kwargs...)),
             Expr(:block,
                 __source__,
-                :($(esc(f))(t.$field, args...; kwargs...))
+                :(($f)(t.$field, args...; kwargs...))
             )
         )
         for f in methods
