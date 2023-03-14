@@ -2,13 +2,22 @@ using Test
 using Kirei
 
 @testset "Macro Tools" begin
-    expr = :(a + b)
-    m = @capture expr $a + $b
-    @test m
-    @test (a, b) ≡ (:a, :b)
-    m = @capture expr $a
-    @test m
-    @test expr ≡ a
+    expr = quote
+        ff(1, "2")
+    end
+    let m = @capture expr begin
+            $(:($f = $args) || :($f($(args...))))
+        end
+        @test m
+        @test f ≡ :ff
+        @test args == [1, "2"]
+    end
+
+    function f(expr)
+        m = @capture expr $(a::Symbol) + $(b::Symbol)
+        m, a, b
+    end
+    @inferred f(:(x + y))
     @test !(@capture expr -$a)
     # struct Foo
     #     s::String
