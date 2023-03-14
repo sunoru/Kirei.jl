@@ -2,28 +2,33 @@ using Test
 using Kirei
 
 @testset "Macro Tools" begin
-    expr = quote
-        ff(1, "2")
-    end
-    let m = @capture expr begin
-            $(:($f = $args) || :($f($(args...))))
+    @testset "@capture" begin
+        expr = quote
+            ff(1, "2")
         end
-        @test m
-        @test f ≡ :ff
-        @test args == [1, "2"]
+        let m = @capture expr begin
+                $(:($f = $args) || :($f($(args...))))
+            end
+            @test m
+            @test f ≡ :ff
+            @test args == [1, "2"]
+        end
+
+        function f(expr)
+            m = @capture expr $(a::Symbol) + $(b::Symbol)
+            m, a, b
+        end
+        @inferred f(:(x + y))
+        @test !(@capture expr -$a)
     end
 
-    function f(expr)
-        m = @capture expr $(a::Symbol) + $(b::Symbol)
-        m, a, b
+    @testset "@forward" begin
+        struct Foo
+            s::String
+        end
+        @forward Foo.s Base.length, Base.getindex
+        foo = Foo("abc")
+        @test length(foo) ≡ 3
+        @test foo[1] ≡ 'a'
     end
-    @inferred f(:(x + y))
-    @test !(@capture expr -$a)
-    # struct Foo
-    #     s::String
-    # end
-    # @forward Foo.s Base.length, Base.getindex
-    # foo = Foo("abc")
-    # @test length(foo) ≡ 3
-    # @test foo[1] ≡ 'a'
 end

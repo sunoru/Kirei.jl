@@ -2,7 +2,7 @@
 function get_bindings(pattern::Expr)
     result = Set{Symbol}()
     _analyze(pat, is_literal=true) = @match pat begin
-        ::QuoteNode => nothing
+        ::QuoteNode => _analyze(pat.value, true)
         if is_literal end && Expr(:$, args...) => foreach(x -> _analyze(x, false), args)
         if is_literal end && Expr(_, args...) => foreach(_analyze, args)
         if is_literal end && _ => nothing
@@ -38,7 +38,7 @@ function get_bindings(pattern::Expr)
     result
 end
 
-rmlines = @λ begin
+const rmlines = @λ begin
     ::LineNumberNode -> nothing
     Expr(head, args...) -> Expr(head, filter(!isnothing, map(rmlines, args))...)
     s -> s
@@ -70,5 +70,17 @@ It supports the syntax of `@match` and `@λ` in `MLStyle.jl`.
 end
 
 @public macro forward(member, methods)
-
+    @capture member $T.$field
+    methods = methods.args
+    Expr(:block, (
+        Expr(
+            :(=),
+            :(($(esc(f)))(t::$(esc(T)), args...; kwargs...)),
+            Expr(:block,
+                __source__,
+                :($(esc(f))(t.$field, args...; kwargs...))
+            )
+        )
+        for f in methods
+    )...)
 end
