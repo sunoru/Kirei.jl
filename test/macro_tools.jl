@@ -19,6 +19,7 @@ end
         @test pack == [2, 3]
         @test t == 4
 
+
         foo = Foo1(Foo1("abc"))
         result = @destruct Foo1(x=Foo1(x=s)) = foo
         @test result ≡ foo
@@ -37,13 +38,17 @@ end
     end
 
     @testset "@forward" begin
-        @forward Foo2.s Base.length, Base.getindex
 
-        foo = Foo2("abc")
+        @forward Foo2.s Base.length, Base.show(io::IO)
+        foo = Foo2("123")
         @test length(foo) ≡ 3
-        @test foo[1] ≡ 'a'
-        f(s::String) = s[2]
-        @forward Foo2.s f
-        f(foo) ≡ 'b'
+        @test string(foo) ≡ "\"123\""
+
+        struct WithTypeParam{T} end
+        WithTypeParam{T}(b, a) where {T} = b + parse(T, a)
+
+        @forward Foo2.s WithTypeParam{T}(b) where {T}
+        @test 124 ≡ WithTypeParam{Int}(1, foo)
+        @test 125.0 ≡ WithTypeParam{Float64}(2, foo)
     end
 end
