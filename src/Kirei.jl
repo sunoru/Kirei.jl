@@ -6,8 +6,9 @@ using ._Common
 include("./public.jl")
 include("./macro_tools.jl")
 
-include("./target.jl")
-include("./kcall.jl")
+include("./tools/platform.jl")
+include("./tools/function.jl")
+include("./tools/ffi.jl")
 
 include("./Common.jl")
 

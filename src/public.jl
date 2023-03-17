@@ -20,7 +20,6 @@ function capture_name(expr, module_)
     end
 end
 
-
 """
     @public expr
 
