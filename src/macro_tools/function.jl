@@ -49,7 +49,9 @@ function FuncDef(funcdef::Expr, __module__::Module=Main, __source__::Union{LineN
     end
     _analyze(expr) = @match expr begin
         :($header where {$(type_params...)}) => (; _analyze(header)..., type_params)
-        :($name($(args...); $(kwargs...))) => (;
+        Expr(:call, name, Expr(:parameters, kwargs...), args...) ||
+            Expr(:call, name, args...) && let kwargs = [] end ||
+            :($name($(args...); $(kwargs...))) => (;
             name,
             args=map(args) do arg
                 @match _analyze_arg(arg) begin
@@ -152,5 +154,7 @@ function to_expr(funcdef::FuncDef; esc::Bool=false)
         Expr(:function, header, body)
     end
 end
+to_expr(funcarg::Expr; esc::Bool=false, excludes=Symbol[]) = esc ? deep_esc(funcarg, excludes) : funcarg
+to_expr(funcarg::Symbol; esc::Bool=false, excludes=Symbol[]) = esc ? deep_esc(funcarg, excludes) : funcarg
 
 Base.convert(::Type{Expr}, funcdef::FuncDef) = to_expr(funcdef)
