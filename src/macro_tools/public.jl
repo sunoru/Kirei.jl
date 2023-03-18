@@ -1,22 +1,28 @@
-function capture_name(expr, module_)
+"""
+    capture_name(expr, [__module__])
+
+Capture the name in a definition expression.
+"""
+function capture_name(expr, __module__::Module=Main)
     name = @match expr begin
         ::Symbol => expr
         Expr(:(::), v, _) => v
         Expr(:(=), v, _) => v
         Expr(:function, f, _...) => f
-        Expr(:macro, m, _...) => Symbol("@", capture_name(m, module_))
+        Expr(:macro, m, _...) => Symbol("@", capture_name(m, __module__))
         Expr(:const, c) => c
         Expr(:global, g) => g
         Expr(:call, f, _...) => f
+        Expr(:struct, _, t, __...) => t
         Expr(:(<:), t, _) => t
         Expr(:abstract, t) => t
-        Expr(:macrocall, _...) => macroexpand(module_, expr)
+        Expr(:macrocall, _...) => macroexpand(__module__, expr)
         Expr(:block, _...) => nothing
     end
     if isnothing(name) || name isa Symbol
         name
     else
-        capture_name(name, module_)
+        capture_name(name, __module__)
     end
 end
 
