@@ -62,10 +62,12 @@ h{T}(arg1::Int, arg2, x::Foo, args...; kwargs...) where T = h{T}(arg1, arg2, x.b
 end
 
 """
-    @leading_default f([io::IO=stdout], a::Int, b=0)
+    @head_default f([io::IO=stdout], a::Int, b=0)
 
-Generate a function `f` that has default values for the leading arguments.
+Generate a function `f` that has default values for the arguments at the beginning of the argument list.
 Note that you need to specify the types of some arguments to prevent ambiguity.
+
+It is usually recommended to only default at most one argument that has a unique type.
 
 The above is equivalent to
 ```julia
@@ -74,9 +76,110 @@ f(a::Int, b) = f(stdout, a, b)
 f(a::Int) = f(stdout, a, 0)
 ```
 
-You can also use `@leading_default` before a function definition.
+You can also use `@head_default` before a function definition.
 """
-@public macro leading_default(funcdef)
+@public macro head_default(funcdef)
     funcdef = FuncDef(funcdef)
 
+    num_defaults = findfirst((@λ begin
+        Expr(:vect, _...) => false
+        _ => true
+    end), funcdef.args)
+    num_defaults = if isnothing(num_defaults)
+        0
+    else
+        num_defaults - 1
+    end
+    isnothing(findnext((@λ begin
+        Expr(:vect, _...) => true
+        _ => false
+    end), funcdef.args, num_defaults + 1)) || error("Default arguments should be at the beginning.")
+
+    _parse(arg) = let new_arg = parse_argdef(arg)
+        @assert !new_arg.splatting "Splatting is not allowed in head default arguments."
+        @destruct FuncArg(; name, type) = new_arg
+        # Set `new_arg.default` to nothing
+        FuncArg(; name, type)
+    end
+    original_impl = if isnothing(funcdef.body)
+        nothing
+    else
+        original_impl = copy(funcdef)
+        empty!(original_impl.args)
+        for arg in funcdef.args
+            @switch arg begin
+            @case Expr(:vect, args...)
+                push!(original_impl.args, _parse.(args)...)
+            @case _
+                push!(original_impl.args, arg)
+            end
+        end
+        original_impl
+    end
+    head_args = funcdef.args[1:num_defaults]
+    tail_args = funcdef.args[num_defaults + 1:end]
+    defs = Expr[]
+    @destruct FuncDef(; name=funcname, kwargs, type_params, line_number) = funcdef
+    call_kwargs = map(kwargs) do kwarg
+        @destruct FuncArg(; name, splatting) = kwarg
+        if splatting
+            Expr(:..., name)
+        else
+            name
+        end
+    end
+    call_tail_args = map(tail_args) do arg
+        @destruct FuncArg(; name, splatting) = arg
+        if splatting
+            Expr(:..., name)
+        else
+            name
+        end
+    end
+    emitted = zeros(Bool, num_defaults)
+    dfs(i) = if i > num_defaults
+        all(!, emitted) && return
+        # Generate the function definition
+        args = FuncArg[]
+        call_args = []
+        for j in 1:num_defaults
+            if !emitted[j]
+                parsed = _parse.(head_args[j].args)
+                push!(args, parsed...)
+                push!(call_args, map(x -> x.name, parsed)...)
+            else
+                for arg in head_args[j].args
+                    @destruct FuncArg(; default=Some(default)) = parse_argdef(arg)
+                    push!(call_args, default)
+                end
+            end
+        end
+        push!(args, tail_args...)
+        push!(call_args, call_tail_args...)
+        body = Expr(
+            :block,
+            line_number,
+            :($(esc(funcname))($(call_args...); $(call_kwargs...)))
+        )
+        def = FuncDef(;
+            name=funcname,
+            args,
+            kwargs,
+            type_params,
+            body,
+            line_number
+        )
+        push!(defs, to_expr(def, esc=true, short=true))
+    else
+        emitted[i] = false
+        dfs(i + 1)
+        emitted[i] = true
+        dfs(i + 1)
+    end
+    dfs(1)
+    Expr(
+        :block,
+        isnothing(original_impl) ? nothing : :(Core.@__doc__ $(to_expr(original_impl, esc=true))),
+        defs...
+    )
 end

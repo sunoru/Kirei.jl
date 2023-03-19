@@ -5,6 +5,26 @@
     splatting::Bool = false
 end
 
+function parse_argdef(argdef::Union{Symbol,Expr})
+    _analyze(arg) = try
+        @match arg begin
+            name::Symbol => (; name)
+            Expr(:(::), type) => (; type)
+            :($name::$type) => (; name, type)
+            :($v...) => (; _analyze(v)..., splatting=true)
+            Expr(:(=), key, value) || Expr(:kw, key, value) =>
+                (; _analyze(key)..., default=Some(value))
+            _ => arg
+        end
+    catch
+        arg
+    end
+    @match _analyze(argdef) begin
+        nt::NamedTuple => FuncArg(; nt...)
+        x => x
+    end
+end
+
 @kstruct struct FuncDef
     name::Union{Symbol,Nothing} = nothing
     args::Vector{Union{FuncArg,Expr}} = []
@@ -53,18 +73,8 @@ function FuncDef(funcdef::Expr, __module__::Module=Main, __source__::Union{LineN
             Expr(:call, name, args...) && let kwargs = [] end ||
             :($name($(args...); $(kwargs...))) => (;
             name,
-            args=map(args) do arg
-                @match _analyze_arg(arg) begin
-                    nt::NamedTuple => FuncArg(; nt...)
-                    x => x
-                end
-            end,
-            kwargs=map(kwargs) do arg
-                @match _analyze_arg(arg) begin
-                    nt::NamedTuple => FuncArg(; nt...)
-                    x => x
-                end
-            end,
+            args=map(parse_argdef, args),
+            kwargs=map(parse_argdef, kwargs),
             type_params=[]
         )
     end
@@ -125,7 +135,7 @@ function to_expr(funcarg::FuncArg; esc::Bool=false, excludes=Symbol[])
         Expr(:kw, expr, something(default))
     end
 end
-function to_expr(funcdef::FuncDef; esc::Bool=false)
+function to_expr(funcdef::FuncDef; esc::Bool=false, short::Bool=false)
     @destruct FuncDef(
         name,
         args,
@@ -144,12 +154,17 @@ function to_expr(funcdef::FuncDef; esc::Bool=false)
     else
         Symbol[]
     end
+    if esc
+        name = Base.esc(name)
+    end
     header = :($name($(to_expr.(args; esc, excludes)...); $(to_expr.(kwargs; esc, excludes)...)))
     if length(type_params) > 0
         header = :($header where {$(type_params...)})
     end
     if isnothing(body)
         header
+    elseif short
+        Expr(:(=), header, body)
     else
         Expr(:function, header, body)
     end
