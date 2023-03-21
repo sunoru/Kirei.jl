@@ -14,6 +14,6 @@ and following generic functions are defined:
         Base.@kwdef $structdef
         $MLStyle.@as_record $name
         Base.copy(x::$name) = Base.deepcopy(x)
-        $name
+        Core.@__doc__ $name
     end |> esc
 end
