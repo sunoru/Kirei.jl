@@ -1,4 +1,4 @@
-@kstruct struct FuncArg
+@krecord struct FuncArg
     name::Union{Symbol,Nothing} = nothing
     type::Union{Symbol,Expr,Nothing} = nothing
     default::Union{Some{Any},Nothing} = nothing
@@ -25,7 +25,7 @@ function parse_argdef(argdef::Union{Symbol,Expr})
     end
 end
 
-@kstruct struct FuncDef
+@krecord struct FuncDef
     name::Union{Symbol,Nothing} = nothing
     args::Vector{Union{FuncArg,Expr}} = []
     kwargs::Vector{Union{FuncArg,Expr}} = []

@@ -18,6 +18,7 @@ function capture_name(expr, __module__::Module=Main)
         Expr(:abstract, t) => t
         Expr(:macrocall, _...) => macroexpand(__module__, expr)
         Expr(:block, _...) => nothing
+        Expr(:where, v, _) => v
     end
     if isnothing(name) || name isa Symbol
         name
@@ -39,9 +40,9 @@ macro public(expr)
             Core.@__doc__ $(esc(expr))
         end
         @assert expr.head ≡ :block "Unsupported expression: @public $expr"
-        quote
-            $((x isa LineNumberNode ? x : _public(x) for x in expr.args)...)
-        end
+        Expr(:block,
+            (x isa LineNumberNode ? x : _public(x) for x in expr.args)...
+        )
     end
     _public(expr)
 end
