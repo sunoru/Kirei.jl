@@ -1,7 +1,7 @@
 using Test
-using Kirei.Common
+using Kirei
 
-@as_record struct Foo1
+@krecord struct Foo1
     x::Union{Foo1,String}
 end
 

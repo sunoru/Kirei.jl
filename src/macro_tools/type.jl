@@ -9,7 +9,7 @@ and following generic functions are defined:
 - `copy`
 """
 @public macro krecord(structdef)
-    name = capture_name(structdef, __module__)
+    name = capture_names(structdef, __module__) |> only
     quote
         Base.@kwdef $structdef
         $MLStyle.@as_record $name
