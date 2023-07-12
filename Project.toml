@@ -1,7 +1,7 @@
 name = "Kirei"
 uuid = "6a3e96c6-960a-42b3-a988-ca59d115acd5"
 authors = ["Sunoru <s@sunoru.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"

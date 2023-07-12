@@ -34,4 +34,16 @@ end
         @test_throws ErrorException @destruct [x, y] = [1, 2, 3]
     end
 
+    @testset "@kenum" begin
+        @kenum E E1=2 E2
+        @kenum EE::Int begin
+            EE1=3
+            EE2
+        end
+
+        @test E1 isa E
+        @test Integer(E2) ≡ Int32(3)
+        @test Integer(EE1) ≡ Int(3)
+    end
+
 end
