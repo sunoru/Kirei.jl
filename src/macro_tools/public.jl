@@ -1,20 +1,27 @@
 function _capture_names_macrocall(expr, __module__::Module=Main)
     macro_ = expr.args[1]
+    cpt(x) = capture_names(x, __module__)
     if macro_ ≡ GlobalRef(Core, Symbol("@doc"))
-        return capture_names(expr.args[end])
+        return cpt(expr.args[end])
     end
     if macro_ isa Symbol
         m = getfield(__module__, macro_)
         if m === getfield(Kirei, Symbol("@krecord"))
-            return capture_names(expr.args[end])
+            return cpt(expr.args[end])
         elseif m === getfield(Kirei, Symbol("@data"))
             return [
                 expr.args[end - 1],
-                capture_names(expr.args[end])...
+                cpt(expr.args[end])...
+            ]
+        elseif m === getfield(Kirei, Symbol("@kenum")) ||
+                m === getfield(Base, Symbol("@enum"))
+            return [
+                cpt(expr.args[end - 1]),
+                cpt(expr.args[end])...
             ]
         end
     end
-    capture_names(macroexpand(__module__, expr))
+    cpt(macroexpand(__module__, expr, recursive=false))
 end
 
 """
