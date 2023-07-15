@@ -17,6 +17,7 @@ and following generic functions are defined:
         Core.@__doc__ $name
     end |> esc
 end
+@declared_names @krecord(body) = body
 
 """
     @kenum EnumName[::BaseType] value1[=x] value2[=y]
@@ -40,3 +41,5 @@ See `Base.@enum`.
         $Tname
     end |> esc
 end
+@declared_names @kenum(args...) = args
+@declared_names Base.@enum(args...) = args
