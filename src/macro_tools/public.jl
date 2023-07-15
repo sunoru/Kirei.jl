@@ -37,7 +37,7 @@ macro declared_names(expr)
 end
 
 macro_declared_names(::Function, ::AbstractVector) = nothing
-@declared_names Core.@doc(x) = x
+@declared_names Core.@doc(_doc, target) = target
 @declared_names MLStyle.@data(name, body) = [name, body]
 
 function _capture_names_macrocall(expr, __module__::Module=Main)
@@ -71,7 +71,7 @@ function capture_names(expr, __module__::Module=Main)
         Expr(:macrocall, _...) => _capture_names_macrocall(expr, __module__)
         Expr(:block, lines...) => vcat(
             (
-                capture_names(x)
+                capture_names(x, __module__)
                 for x in lines
                 if !(x isa LineNumberNode)
             )...
