@@ -46,8 +46,11 @@ function _capture_names_macrocall(expr, __module__::Module=Main)
     m = getdef(macro_, __module__)
     name = macro_declared_names(m, expr.args[3:end])
     isnothing(name) && return cpt(macroexpand(__module__, expr, recursive=false))
-    name isa AbstractVector && return vcat(cpt.(name)...)
-    cpt(name)
+    try
+        return vcat(cpt.(name)...)
+    catch
+        cpt(name)
+    end
 end
 
 """
