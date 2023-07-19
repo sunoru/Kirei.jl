@@ -17,6 +17,7 @@ and following generic functions are defined:
         Core.@__doc__ $name
     end |> esc
 end
+@declared_names Base.@kwdef(body) = body
 @declared_names @krecord(body) = body
 
 """
@@ -25,6 +26,7 @@ end
         value1
         value2
     end
+    @kenum ExistingEnum
 
 Macro to define a Julia-style enum that supports MLStyle's patten matching.
 See `Base.@enum`.
@@ -34,8 +36,13 @@ See `Base.@enum`.
         :($EnumName::$BaseType) => EnumName
         _ => name
     end
+    def = if length(rest) === 0
+        nothing
+    else
+        :(Core.@__doc__ Base.@enum $name $(rest...))
+    end
     quote
-        Core.@__doc__ Base.@enum $name $(rest...)
+        $def
         $(MLStyle).is_enum(::$Tname) = true
         $(MLStyle).pattern_uncall(e::$Tname, _, _, _, _) = $(MLStyle.AbstractPatterns.literal)(e)
         $Tname
