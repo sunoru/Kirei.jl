@@ -19,7 +19,7 @@ function _parse_kcall(lib, expr; escape=true)
     (; f, args, T)
 end
 
-function _kcall(lib, expr)
+function gen_kcall(lib, expr)
     f, args, T = _parse_kcall(lib, expr)
     :(@ccall $f($(args...))::$T)
 end
@@ -31,11 +31,11 @@ Similar to `@ccall`. But it defines typeless arguments as pointers
 and typeless return values as `Cvoid`.
 """
 @public macro kcall(lib, expr)
-    _kcall(esc(lib), expr)
+    gen_kcall(esc(lib), expr)
 end
 
 macro kcall(expr)
-    _kcall(nothing, expr)
+    gen_kcall(nothing, expr)
 end
 
 function gen_variadic_ccall(lib, expr)

@@ -1,16 +1,22 @@
+_target_os_cond(o) = @match o begin
+    :windows => :(Sys.iswindows())
+    :linux => :(Sys.islinux())
+    :macos => :(Sys.isapple())
+    :(not($(ss...))) => Expr(:&&, (:(!$(_target_os_cond(s))) for s in ss)...)
+    _ => error("Unsupport OS: $o")
+end
+_target_arch_cond(o) = @match o begin
+    :(not($(ss...))) => Expr(:&&, (:(!$(_target_arch_cond(s))) for s in ss)...)
+    _ => :(Sys.ARCH ≡ $(QuoteNode(o)))
+end
 function _target(expr; os=nothing, arch=nothing)
     os_cond = if isnothing(os)
         :(true)
     else
         os_cond = :(false)
         for o in os
-            f = @match o begin
-                :windows => :(Sys.iswindows)
-                :linux => :(Sys.islinux)
-                :macos => :(Sys.isapple)
-                _ => error("Unsupport OS: $o")
-            end
-            os_cond = :($f() || $os_cond)
+            c = _target_os_cond(o)
+            os_cond = :($c || $os_cond)
         end
         os_cond
     end
@@ -19,7 +25,7 @@ function _target(expr; os=nothing, arch=nothing)
     else
         arch_cond = :(false)
         for a in arch
-            c = :(Sys.ARCH ≡ $(QuoteNode(a)))
+            c = _target_arch_cond(a)
             arch_cond = :($c || $arch_cond)
         end
         arch_cond
@@ -41,16 +47,13 @@ It uses `@static` to evaluate the conditions at parse time.
 """
 @public macro target(args...)
     argc = length(args)
-    if argc == 1
-        return esc(args[1])
-    end
-    kwargs = Dict{Symbol, Vector{Symbol}}()
+    argc == 1 && return esc(args[1])
+    kwargs = Dict{Symbol, Vector}()
     for i in 1:argc - 1
         kw = args[i]
         push!(kwargs, @match kw begin
-            Expr(:(=), k, w::Symbol) => (k=>[w])
-            Expr(:(=), k, w::QuoteNode) => (k=>[w])
-            Expr(:(=), k, Expr(:tuple, w...)) => (k=>Vector{Symbol}(w))
+            Expr(:(=), k, Expr(:tuple, w...)) => (k=>collect(w))
+            Expr(:(=), k, w) => (k=>[w])
         end)
     end
     _target(args[end]; kwargs...)
